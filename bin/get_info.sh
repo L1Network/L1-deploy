@@ -154,7 +154,141 @@ function get_system_accounts_info {
     done
 }
 
-# Execute the functions
-get_blockchain_info
-get_account_keys
-get_system_accounts_info
+# Function to get comprehensive account information
+function get_detailed_account_info {
+    if [ -z "$1" ]; then
+        echo "Usage: get_detailed_account_info <account_name>"
+        read -p "Enter account name: " ACCOUNT_NAME
+    else
+        ACCOUNT_NAME="$1"
+    fi
+
+    echo "=== Detailed Information for Account: $ACCOUNT_NAME ==="
+    
+    # Basic account information
+    echo -e "\n--- Basic Account Info ---"
+    cleos --url $API_URL get account $ACCOUNT_NAME
+    
+    # Account balance
+    echo -e "\n--- Token Balance ---"
+    cleos --url $API_URL get currency balance eosio.token $ACCOUNT_NAME IMPACT 2>/dev/null || echo "No IMPACT balance found"
+    
+    # Voting information
+    echo -e "\n--- Voting Info ---"
+    ACCOUNT_INFO=$(cleos --url $API_URL get account $ACCOUNT_NAME --json 2>/dev/null)
+    if [ $? -eq 0 ] && command -v jq &> /dev/null; then
+        VOTER_INFO=$(echo $ACCOUNT_INFO | jq -r '.voter_info // empty')
+        if [ -n "$VOTER_INFO" ] && [ "$VOTER_INFO" != "null" ]; then
+            echo "Voting details:"
+            echo $ACCOUNT_INFO | jq '.voter_info'
+        else
+            echo "Account has not voted yet"
+        fi
+    else
+        echo "Could not retrieve voting information"
+    fi
+    
+    # RAM usage
+    echo -e "\n--- RAM Usage ---"
+    if [ $? -eq 0 ] && command -v jq &> /dev/null; then
+        RAM_QUOTA=$(echo $ACCOUNT_INFO | jq -r '.ram_quota // 0')
+        RAM_USAGE=$(echo $ACCOUNT_INFO | jq -r '.ram_usage // 0')
+        if [ "$RAM_QUOTA" != "0" ]; then
+            RAM_PERCENT=$(echo "scale=2; ($RAM_USAGE * 100) / $RAM_QUOTA" | bc -l 2>/dev/null || echo "N/A")
+            echo "RAM Quota: $RAM_QUOTA bytes"
+            echo "RAM Usage: $RAM_USAGE bytes"
+            echo "RAM Usage Percentage: $RAM_PERCENT%"
+        else
+            echo "No RAM information available"
+        fi
+    fi
+    
+    # Staked resources
+    echo -e "\n--- Staked Resources ---"
+    if command -v jq &> /dev/null; then
+        NET_WEIGHT=$(echo $ACCOUNT_INFO | jq -r '.net_weight // "0"')
+        CPU_WEIGHT=$(echo $ACCOUNT_INFO | jq -r '.cpu_weight // "0"')
+        echo "NET Weight: $NET_WEIGHT"
+        echo "CPU Weight: $CPU_WEIGHT"
+    fi
+    
+    # Producer information (if account is a producer)
+    echo -e "\n--- Producer Information ---"
+    PRODUCER_INFO=$(cleos --url $API_URL get table eosio eosio producers --lower $ACCOUNT_NAME --upper $ACCOUNT_NAME --json 2>/dev/null)
+    if [ $? -eq 0 ] && command -v jq &> /dev/null; then
+        PRODUCER_DATA=$(echo $PRODUCER_INFO | jq -r '.rows[0] // empty')
+        if [ -n "$PRODUCER_DATA" ] && [ "$PRODUCER_DATA" != "null" ]; then
+            echo "Account is a registered producer:"
+            echo $PRODUCER_INFO | jq '.rows[0]'
+        else
+            echo "Account is not a registered producer"
+        fi
+    else
+        echo "Could not retrieve producer information"
+    fi
+    
+    # Transaction history (last few actions)
+    echo -e "\n--- Recent Actions ---"
+    cleos --url $API_URL get actions $ACCOUNT_NAME -1 -5 2>/dev/null || echo "Could not retrieve recent actions"
+}
+
+# Function to display menu
+function show_menu {
+    echo "=== Blockchain Information Menu ==="
+    echo "1. Get blockchain info"
+    echo "2. Get account keys for configured accounts"
+    echo "3. Get system accounts info"
+    echo "4. Get detailed account information"
+    echo "5. Run all functions"
+    echo "0. Exit"
+    echo "=================================="
+}
+
+# Main menu loop
+function main_menu {
+    while true; do
+        show_menu
+        read -p "Choose an option [0-5]: " choice
+        
+        case $choice in
+            1)
+                echo "Getting blockchain information..."
+                get_blockchain_info
+                ;;
+            2)
+                echo "Getting account keys..."
+                get_account_keys
+                ;;
+            3)
+                echo "Getting system accounts info..."
+                get_system_accounts_info
+                ;;
+            4)
+                echo "Getting detailed account information..."
+                read -p "Enter account name: " account_name
+                get_detailed_account_info "$account_name"
+                ;;
+            5)
+                echo "Running all functions..."
+                get_blockchain_info
+                get_account_keys
+                get_system_accounts_info
+                ;;
+            0)
+                echo "Exiting..."
+                exit 0
+                ;;
+            *)
+                echo "Invalid option. Please try again."
+                ;;
+        esac
+        
+        echo ""
+        read -p "Press Enter to continue..."
+        clear
+    done
+}
+
+# Execute the main menu (replace the previous automatic execution)
+clear
+main_menu
