@@ -1,0 +1,92 @@
+---
+# Mini Network Configuration
+# Connects to existing blockchain network
+
+# Network endpoints
+network:
+  # Mini network node ports
+  bp_lite:
+    http_port: 9888
+    p2p_port: 9444
+  
+  api_node:
+    http_port: 9889
+    p2p_port: 9445
+    state_history_port: 8080
+
+# Directory paths
+paths:
+  root: "/data/chain-data/mini"
+  config_root: "../configs/mini"
+
+# Node configuration
+node:
+  bp_name: "mini.bp"
+  producer_name: "mini.bp"
+
+# Existing BP account (optional)
+existing_bp:
+  account: ""
+  private_key: ""
+  public_key: ""
+
+# Main network connection (REQUIRED)
+main_network:
+  api_endpoint: "https://mainnet.example.com:443"
+  # REQUIRED: Full P2P addresses of main network nodes to connect to
+  p2p_peers:
+    - "127.0.0.1:9876"  # Main network node 1
+    - "127.0.0.1:9877"  # Main network node 2
+  # Or for remote main network:
+  # - "mainnet.example.com:9876"
+  # - "mainnet.example.com:9877"
+  mandatory_connection: true
+
+# Producer registration settings
+producer:
+  url: "https://mini-bp.local"
+  location_code: "MINI"
+  stake:
+    net: "100.0000 IMPACT"
+    cpu: "100.0000 IMPACT"
+  buy_ram: "1000.0000 IMPACT"
+  initial_funding: "5000.0000 IMPACT"
+  self_stake:
+    net: "2000.0000 IMPACT"
+    cpu: "2000.0000 IMPACT"
+
+# Additional P2P peers (beyond main network)
+additional_p2p_peers: []
+  # Example:
+  # - "peer1.example.com:9876"
+  # - "peer2.example.com:9876"
+
+# Resource limits (per node type)
+resources:
+  bp_lite:
+    # MB for bp-lite
+    chain_state_db_size: 4096
+    # Limited block history for BP node
+    block_history_limit: 100000
+  
+  api_node:
+    # MB for api-node (larger for full history)
+    chain_state_db_size: 4096
+    # Unlimited block history for API node
+    block_history_limit: 0
+
+# Performance settings
+performance:
+  chain_threads: 2
+  http_threads: 4
+  net_threads: 2
+
+# Security settings
+security:
+  allowed_connections: "any"
+  max_nodes_per_host: 10
+
+# Logging
+logging:
+  # debug, info, warn, error
+  level: "info" 
