@@ -148,6 +148,138 @@ rotate_logs_if_needed() {
   fi
 }
 
+start_node_from_snapshot() {
+  local spec="$1"
+  local snapshot_path="$2"
+  IFS='|' read -r name cfg data p2p http <<<"$spec"
+  
+  # Check if snapshot_path is a predefined source name
+  if [[ ! "$snapshot_path" =~ ^(https?://|/) ]]; then
+    # It's not a URL or absolute path, check if it's a predefined source
+    local predefined_url
+    predefined_url=$(yq -r ".snapshots.sources.${snapshot_path} // empty" "$MINI_NETWORK_CONFIG")
+    if [[ -n "$predefined_url" ]]; then
+      echo "[$name] Using predefined snapshot source '$snapshot_path': $predefined_url"
+      snapshot_path="$predefined_url"
+    else
+      echo "[$name] ERROR: Unknown snapshot source '$snapshot_path'"
+      echo "Available sources:"
+      yq -r '.snapshots.sources | keys[]' "$MINI_NETWORK_CONFIG" 2>/dev/null || echo "  No predefined sources configured"
+      return 1
+    fi
+  fi
+  
+  echo "[$name] Starting from snapshot: $snapshot_path"
+  
+  # Stop node if running
+  if running "$data"; then
+    echo "[$name] stopping existing node..."
+    stop_node "$spec"
+    sleep 2
+  fi
+  
+  # Clear existing blockchain data
+  echo "[$name] clearing existing blockchain data..."
+  rm -rf "$data/data/blocks" "$data/data/state" "$data/data/state-history"
+  mkdir -p "$data/logs" "$data/data"
+  
+  # Check and rotate logs if needed
+  rotate_logs_if_needed "$data" "$name"
+  
+  # Read snapshot configuration from YAML
+  local download_dir keep_downloaded
+  download_dir=$(yq -r '.snapshots.download_dir // "/tmp"' "$MINI_NETWORK_CONFIG")
+  keep_downloaded=$(yq -r '.snapshots.keep_downloaded // false' "$MINI_NETWORK_CONFIG")
+  
+  # Ensure download directory exists
+  mkdir -p "$download_dir"
+  
+  # Download snapshot if it's a URL
+  local local_snapshot="$snapshot_path"
+  local downloaded_file=false
+  if [[ "$snapshot_path" =~ ^https?:// ]]; then
+    echo "[$name] downloading snapshot to $download_dir..."
+    local_snapshot="$download_dir/$(basename "$snapshot_path")"
+    downloaded_file=true
+    
+    if ! curl -L -o "$local_snapshot" "$snapshot_path"; then
+      echo "[$name] ERROR: Failed to download snapshot"
+      return 1
+    fi
+    echo "[$name] snapshot downloaded: $local_snapshot"
+  fi
+  
+  # Verify snapshot file exists
+  if [[ ! -f "$local_snapshot" ]]; then
+    echo "[$name] ERROR: Snapshot file not found: $local_snapshot"
+    return 1
+  fi
+  
+  echo "[$name] starting with snapshot on :$http (p2p :$p2p)..."
+  
+  # Load keys for this node
+  local keys_file="$cfg/keys.txt"
+  if [[ ! -f "$keys_file" ]]; then
+    echo "[$name] ERROR: keys file not found: $keys_file"
+    return 1
+  fi
+
+  local public_key private_key
+  public_key=$(grep "Public key:" "$keys_file" | cut -d: -f2 | tr -d ' ')
+  private_key=$(grep "Private key:" "$keys_file" | cut -d: -f2 | tr -d ' ')
+
+  # Build signature provider arguments
+  local sig_args=(--signature-provider "${public_key}=KEY:${private_key}")
+  
+  # Add BLS signature provider for BP node
+  if [[ "$name" == "bp-lite" ]]; then
+    local bls_keys_file="$cfg/bls_finalizer.key"
+    if [[ -f "$bls_keys_file" && -s "$bls_keys_file" ]]; then
+      local bls_public_key bls_private_key
+      bls_public_key=$(grep "Public key:" "$bls_keys_file" | cut -d: -f2 | tr -d ' ' || echo "")
+      bls_private_key=$(grep "Private key:" "$bls_keys_file" | cut -d: -f2 | tr -d ' ' || echo "")
+      
+      if [[ -n "$bls_public_key" && -n "$bls_private_key" ]]; then
+        sig_args+=(--signature-provider "${bls_public_key}=KEY:${bls_private_key}")
+        echo "[$name] using BLS finalizer keys for Savanna consensus"
+      fi
+    fi
+  fi
+
+  # Start with snapshot
+  (
+    exec "$NODEOS_BIN" \
+      --data-dir "$data/data" \
+      --config-dir "$cfg" \
+      --snapshot "$local_snapshot" \
+      --p2p-listen-endpoint "0.0.0.0:$p2p" \
+      --http-server-address "0.0.0.0:$http" \
+      "${sig_args[@]}" \
+      >>"$data/logs/nodeos.log" 2>&1
+  ) &
+  echo $! >"$(pidfile "$data")"
+  
+  sleep 5  # Give more time for snapshot loading
+  if running "$data"; then
+    echo "[$name] started successfully from snapshot"
+    
+    # Clean up downloaded snapshot based on configuration
+    if [[ "$downloaded_file" == true && "$keep_downloaded" == false && -f "$local_snapshot" ]]; then
+      rm -f "$local_snapshot"
+      echo "[$name] cleaned up downloaded snapshot file (keep_downloaded=false)"
+    elif [[ "$downloaded_file" == true && "$keep_downloaded" == true ]]; then
+      echo "[$name] snapshot kept at: $local_snapshot (keep_downloaded=true)"
+    fi
+  else
+    echo "[$name] failed to start from snapshot - check $data/logs/nodeos.log"
+    # Always clean up on failure unless explicitly keeping files
+    if [[ "$downloaded_file" == true && "$keep_downloaded" == false && -f "$local_snapshot" ]]; then
+      rm -f "$local_snapshot"
+    fi
+    return 1
+  fi
+}
+
 start_node() {
   local spec="$1"; IFS='|' read -r name cfg data p2p http <<<"$spec"
 
@@ -812,8 +944,73 @@ case "${1:-}" in
       echo ""
     done
     ;;
+  snapshot-bp)
+    if [[ -z "$2" ]]; then
+      echo "Error: Please provide snapshot source"
+      echo "Usage: $0 snapshot-bp <source>"
+      echo ""
+      echo "Available predefined sources:"
+      yq -r '.snapshots.sources | keys[]' "$MINI_NETWORK_CONFIG" 2>/dev/null || echo "  No predefined sources configured"
+      echo ""
+      echo "Examples:"
+      echo "  $0 snapshot-bp impact_mainnet        # Use predefined source"
+      echo "  $0 snapshot-bp https://example.com/snapshot.bin  # Direct URL"
+      echo "  $0 snapshot-bp /path/to/snapshot.bin # Local file"
+      exit 1
+    fi
+    for spec in "${NODES[@]}"; do
+      IFS='|' read -r name _ _ _ _ <<<"$spec"
+      if [[ "$name" == "bp-lite" ]]; then
+        start_node_from_snapshot "$spec" "$2"
+        break
+      fi
+    done
+    ;;
+  snapshot-api)
+    if [[ -z "$2" ]]; then
+      echo "Error: Please provide snapshot source"
+      echo "Usage: $0 snapshot-api <source>"
+      echo ""
+      echo "Available predefined sources:"
+      yq -r '.snapshots.sources | keys[]' "$MINI_NETWORK_CONFIG" 2>/dev/null || echo "  No predefined sources configured"
+      echo ""
+      echo "Examples:"
+      echo "  $0 snapshot-api impact_mainnet        # Use predefined source"
+      echo "  $0 snapshot-api https://example.com/snapshot.bin  # Direct URL"
+      echo "  $0 snapshot-api /path/to/snapshot.bin # Local file"
+      exit 1
+    fi
+    for spec in "${NODES[@]}"; do
+      IFS='|' read -r name _ _ _ _ <<<"$spec"
+      if [[ "$name" == "api-node" ]]; then
+        start_node_from_snapshot "$spec" "$2"
+        break
+      fi
+    done
+    ;;
+  snapshot-both)
+    if [[ -z "$2" ]]; then
+      echo "Error: Please provide snapshot source"
+      echo "Usage: $0 snapshot-both <source>"
+      echo ""
+      echo "Available predefined sources:"
+      yq -r '.snapshots.sources | keys[]' "$MINI_NETWORK_CONFIG" 2>/dev/null || echo "  No predefined sources configured"
+      echo ""
+      echo "Examples:"
+      echo "  $0 snapshot-both impact_mainnet        # Use predefined source"
+      echo "  $0 snapshot-both https://example.com/snapshot.bin  # Direct URL"
+      echo "  $0 snapshot-both /path/to/snapshot.bin # Local file"
+      exit 1
+    fi
+    echo "Starting both nodes from snapshot: $2"
+    for spec in "${NODES[@]}"; do
+      IFS='|' read -r name _ _ _ _ <<<"$spec"
+      echo ""
+      start_node_from_snapshot "$spec" "$2"
+    done
+    ;;
   *)
-    echo "Usage: $0 {create|register|finalizer|check|start|stop|restart|status|logs|start-bp|start-api|stop-bp|stop-api|restart-bp|restart-api|status-bp|status-api}"
+    echo "Usage: $0 {create|register|finalizer|check|start|stop|restart|status|logs|snapshot-bp|snapshot-api|snapshot-both|start-bp|start-api|stop-bp|stop-api|restart-bp|restart-api|status-bp|status-api}"
     echo ""
     echo "Main Commands:"
     echo "  create    - Setup configs and generate keys (EOSIO + BLS)"
@@ -827,6 +1024,11 @@ case "${1:-}" in
     echo "  restart   - Restart both nodes"
     echo "  status    - Show status of both nodes"
     echo "  logs      - Check/truncate log files (100MB limit)"
+    echo ""
+    echo "Snapshot Management:"
+    echo "  snapshot-bp   <url|path>  - Start BP from snapshot (clears data)"
+    echo "  snapshot-api  <url|path>  - Start API from snapshot (clears data)"
+    echo "  snapshot-both <url|path>  - Start both from snapshot (clears data)"
     echo ""
     echo "Individual Node Management:"
     echo "  start-bp    - Start only block producer"
@@ -849,6 +1051,13 @@ case "${1:-}" in
     echo "  2. $0 create     # Generate BLS keys + configs"
     echo "  3. $0 finalizer  # Register BLS finalizer only"
     echo "  4. $0 start      # Launch nodes"
+    echo ""
+    echo "Fast sync with snapshots:"
+    echo "  $0 snapshot-both impact_mainnet       # Use predefined IMPACT snapshot"
+    echo "  $0 snapshot-bp /path/to/snapshot.bin  # Local file"
+    echo "  $0 snapshot-api https://example.com/snapshot.bin  # Direct URL"
+    echo ""
+    echo "⚠️  Warning: Snapshot commands will clear existing blockchain data!"
     exit 1
     ;;
 esac

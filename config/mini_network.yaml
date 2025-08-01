@@ -19,6 +19,18 @@ paths:
   root: "/data/chain-data/mini"
   config_root: "../configs/mini"
 
+# Snapshot configuration
+snapshots:
+  # Local directory to store downloaded snapshots
+  download_dir: "/data/snapshots"
+  # Keep downloaded snapshots after use (true/false)
+  keep_downloaded: true
+  # Default snapshot URLs for quick sync
+  sources:
+    impact_mainnet: "https://snapshots.impact.detroitledger.tech/latest.bin"
+    # Add more snapshot sources as needed
+    # backup_source: "https://backup.example.com/snapshot.bin"
+
 # Node configuration
 node:
   bp_name: "alpha.bp"
