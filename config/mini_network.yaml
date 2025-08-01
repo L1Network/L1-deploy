@@ -21,31 +21,29 @@ paths:
 
 # Node configuration
 node:
-  bp_name: "mini.bp"
-  producer_name: "mini.bp"
+  bp_name: "alpha.bp"
+  producer_name: "alpha.bp"
 
 # Existing BP account (optional)
 existing_bp:
-  account: ""
-  private_key: ""
-  public_key: ""
+  account: "alpha.bp"
+  private_key: "5xxx"
+  public_key: "EOS5LPVXEmagu9pK3mPYrNZqbquWfd85fFkbm7HgVSekbRXWdVYbQ"
 
 # Main network connection (REQUIRED)
 main_network:
-  api_endpoint: "https://mainnet.example.com:443"
+  api_endpoint: "https://layer1.eosusa.io"
   # REQUIRED: Full P2P addresses of main network nodes to connect to
   p2p_peers:
-    - "127.0.0.1:9876"  # Main network node 1
-    - "127.0.0.1:9877"  # Main network node 2
-  # Or for remote main network:
-  # - "mainnet.example.com:9876"
-  # - "mainnet.example.com:9877"
+    - "layer1.p2p.eosusa.io:9887"
+    - "peer1-layer1.eosphere.io:9877"
+    - "p2p.impact.detroitledger.tech:1337"
   mandatory_connection: true
 
 # Producer registration settings
 producer:
-  url: "https://mini-bp.local"
-  location_code: "MINI"
+  url: "https://bp.boid.com"
+  location_code: "EU"
   stake:
     net: "100.0000 IMPACT"
     cpu: "100.0000 IMPACT"

@@ -19,6 +19,7 @@ NODE_THREE_DIR="node-gamma"
 
 # Config files
 GENESIS_FILE="/data/L1-deploy/config/genesis.json"
+GENESIS_FILE_ACTIVE="/data/L1-deploy/config/genesis-IMPACT.json"
 CONFIG_FILE="/data/L1-deploy/config/config.ini"
 LOGGING_JSON="/data/L1-deploy/config/logging.json"
 

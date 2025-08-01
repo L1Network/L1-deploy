@@ -36,7 +36,7 @@ if ! command -v yq &>/dev/null; then
 fi
 
 # Load and validate Main Net API endpoint
-MAIN_NET_API=$(yq '.main_network.api_endpoint' "$CONFIG_FILE")
+MAIN_NET_API=$(yq -r '.main_network.api_endpoint' "$CONFIG_FILE")
 if [[ "$MAIN_NET_API" == "null" || -z "$MAIN_NET_API" ]]; then
   echo "ERROR: main_network.api_endpoint is a required field in config/mini_network.yaml"
   echo "       Please add it, for example: api_endpoint: \"http://127.0.0.1:8888\""
@@ -44,51 +44,51 @@ if [[ "$MAIN_NET_API" == "null" || -z "$MAIN_NET_API" ]]; then
 fi
 
 # Load variables from YAML
-MINI_BP_HTTP_PORT=$(yq '.network.bp_lite.http_port' "$CONFIG_FILE")
-MINI_API_HTTP_PORT=$(yq '.network.api_node.http_port' "$CONFIG_FILE")
-MINI_BP_P2P_PORT=$(yq '.network.bp_lite.p2p_port' "$CONFIG_FILE")
-MINI_API_P2P_PORT=$(yq '.network.api_node.p2p_port' "$CONFIG_FILE")
-MINI_STATE_HISTORY_PORT=$(yq '.network.api_node.state_history_port' "$CONFIG_FILE")
-MINI_ROOT=$(yq '.paths.root' "$CONFIG_FILE")
-MINI_CONFIG_ROOT=$(yq '.paths.config_root' "$CONFIG_FILE")
+MINI_BP_HTTP_PORT=$(yq -r '.network.bp_lite.http_port' "$CONFIG_FILE")
+MINI_API_HTTP_PORT=$(yq -r '.network.api_node.http_port' "$CONFIG_FILE")
+MINI_BP_P2P_PORT=$(yq -r '.network.bp_lite.p2p_port' "$CONFIG_FILE")
+MINI_API_P2P_PORT=$(yq -r '.network.api_node.p2p_port' "$CONFIG_FILE")
+MINI_STATE_HISTORY_PORT=$(yq -r '.network.api_node.state_history_port' "$CONFIG_FILE")
+MINI_ROOT=$(yq -r '.paths.root' "$CONFIG_FILE")
+MINI_CONFIG_ROOT=$(yq -r '.paths.config_root' "$CONFIG_FILE")
 [[ "$MINI_CONFIG_ROOT" == "null" || -z "$MINI_CONFIG_ROOT" ]] && \
   MINI_CONFIG_ROOT="$(dirname "${BASH_SOURCE[0]}")/../configs/mini"
-MINI_BP_NAME=$(yq '.node.bp_name' "$CONFIG_FILE")
-MINI_PRODUCER_NAME=$(yq '.node.producer_name' "$CONFIG_FILE")
-EXISTING_BP_ACCOUNT=$(yq '.existing_bp.account' "$CONFIG_FILE")
-EXISTING_BP_PRIVATE_KEY=$(yq '.existing_bp.private_key' "$CONFIG_FILE")
-EXISTING_BP_PUBLIC_KEY=$(yq '.existing_bp.public_key' "$CONFIG_FILE")
-MINI_BP_URL=$(yq '.producer.url' "$CONFIG_FILE")
-MINI_BP_LOCATION_CODE=$(yq '.producer.location_code' "$CONFIG_FILE")
-MINI_STAKE_NET=$(yq '.producer.stake.net' "$CONFIG_FILE")
-MINI_STAKE_CPU=$(yq '.producer.stake.cpu' "$CONFIG_FILE")
-MINI_BUY_RAM=$(yq '.producer.buy_ram' "$CONFIG_FILE")
-MINI_INITIAL_FUNDING=$(yq '.producer.initial_funding' "$CONFIG_FILE")
-MINI_SELF_STAKE_NET=$(yq '.producer.self_stake.net' "$CONFIG_FILE")
-MINI_SELF_STAKE_CPU=$(yq '.producer.self_stake.cpu' "$CONFIG_FILE")
+MINI_BP_NAME=$(yq -r '.node.bp_name' "$CONFIG_FILE")
+MINI_PRODUCER_NAME=$(yq -r '.node.producer_name' "$CONFIG_FILE")
+EXISTING_BP_ACCOUNT=$(yq -r '.existing_bp.account' "$CONFIG_FILE")
+EXISTING_BP_PRIVATE_KEY=$(yq -r '.existing_bp.private_key' "$CONFIG_FILE")
+EXISTING_BP_PUBLIC_KEY=$(yq -r '.existing_bp.public_key' "$CONFIG_FILE")
+MINI_BP_URL=$(yq -r '.producer.url' "$CONFIG_FILE")
+MINI_BP_LOCATION_CODE=$(yq -r '.producer.location_code' "$CONFIG_FILE")
+MINI_STAKE_NET=$(yq -r '.producer.stake.net' "$CONFIG_FILE")
+MINI_STAKE_CPU=$(yq -r '.producer.stake.cpu' "$CONFIG_FILE")
+MINI_BUY_RAM=$(yq -r '.producer.buy_ram' "$CONFIG_FILE")
+MINI_INITIAL_FUNDING=$(yq -r '.producer.initial_funding' "$CONFIG_FILE")
+MINI_SELF_STAKE_NET=$(yq -r '.producer.self_stake.net' "$CONFIG_FILE")
+MINI_SELF_STAKE_CPU=$(yq -r '.producer.self_stake.cpu' "$CONFIG_FILE")
 
 # Load node-specific resource settings
-MINI_BP_CHAIN_STATE_DB_SIZE=$(yq '.resources.bp_lite.chain_state_db_size' "$CONFIG_FILE")
-MINI_BP_BLOCK_HISTORY_LIMIT=$(yq '.resources.bp_lite.block_history_limit' "$CONFIG_FILE")
-MINI_API_CHAIN_STATE_DB_SIZE=$(yq '.resources.api_node.chain_state_db_size' "$CONFIG_FILE")
-MINI_API_BLOCK_HISTORY_LIMIT=$(yq '.resources.api_node.block_history_limit' "$CONFIG_FILE")
+MINI_BP_CHAIN_STATE_DB_SIZE=$(yq -r '.resources.bp_lite.chain_state_db_size' "$CONFIG_FILE")
+MINI_BP_BLOCK_HISTORY_LIMIT=$(yq -r '.resources.bp_lite.block_history_limit' "$CONFIG_FILE")
+MINI_API_CHAIN_STATE_DB_SIZE=$(yq -r '.resources.api_node.chain_state_db_size' "$CONFIG_FILE")
+MINI_API_BLOCK_HISTORY_LIMIT=$(yq -r '.resources.api_node.block_history_limit' "$CONFIG_FILE")
 
 # Performance and security settings
-MINI_CHAIN_THREADS=$(yq '.performance.chain_threads' "$CONFIG_FILE")
-MINI_HTTP_THREADS=$(yq '.performance.http_threads' "$CONFIG_FILE")
-MINI_NET_THREADS=$(yq '.performance.net_threads' "$CONFIG_FILE")
-MINI_ALLOWED_CONNECTIONS=$(yq '.security.allowed_connections' "$CONFIG_FILE")
-MINI_MAX_NODES_PER_HOST=$(yq '.security.max_nodes_per_host' "$CONFIG_FILE")
-MINI_LOG_LEVEL=$(yq '.logging.level' "$CONFIG_FILE")
+MINI_CHAIN_THREADS=$(yq -r '.performance.chain_threads' "$CONFIG_FILE")
+MINI_HTTP_THREADS=$(yq -r '.performance.http_threads' "$CONFIG_FILE")
+MINI_NET_THREADS=$(yq -r '.performance.net_threads' "$CONFIG_FILE")
+MINI_ALLOWED_CONNECTIONS=$(yq -r '.security.allowed_connections' "$CONFIG_FILE")
+MINI_MAX_NODES_PER_HOST=$(yq -r '.security.max_nodes_per_host' "$CONFIG_FILE")
+MINI_LOG_LEVEL=$(yq -r '.logging.level' "$CONFIG_FILE")
 
 # Load P2P peers as full addresses
-IFS=$'\n' read -d '' -r -a MAIN_NETWORK_P2P_PEERS < <(yq '.main_network.p2p_peers[]' "$CONFIG_FILE" | tr -d '\r')
-IFS=$'\n' read -d '' -r -a ADDITIONAL_P2P_PEERS < <(yq '.additional_p2p_peers[]?' "$CONFIG_FILE" | tr -d '\r')
+mapfile -t MAIN_NETWORK_P2P_PEERS < <(yq -r '.main_network.p2p_peers[]' "$CONFIG_FILE" | tr -d '\r')
+mapfile -t ADDITIONAL_P2P_PEERS < <(yq -r '.additional_p2p_peers[]?' "$CONFIG_FILE" | tr -d '\r')
 
 # Load main net API and set a default if not provided
-MAIN_NET_API=$(yq '.main_network.api_endpoint' "$CONFIG_FILE")
+MAIN_NET_API=$(yq -r '.main_network.api_endpoint' "$CONFIG_FILE")
 [[ "$MAIN_NET_API" == "null" || -z "$MAIN_NET_API" ]] && {
-  first_peer=$(yq '.main_network.p2p_peers[0]' "$CONFIG_FILE")
+  first_peer=$(yq -r '.main_network.p2p_peers[0]' "$CONFIG_FILE")
   MAIN_NET_API="http://${first_peer%:*}:8888" # Assumes default http port 8888
 }
 
@@ -128,6 +128,26 @@ running() {
   return 1
 }
 
+rotate_logs_if_needed() {
+  local data_dir="$1"
+  local name="$2"
+  local log_file="$data_dir/logs/nodeos.log"
+  
+  if [[ -f "$log_file" ]]; then
+    local log_size_mb=$(stat -c%s "$log_file" 2>/dev/null || echo 0)
+    log_size_mb=$((log_size_mb / 1024 / 1024))
+    
+    if [[ $log_size_mb -gt 100 ]]; then
+      echo "[$name] log file is ${log_size_mb}MB, truncating to keep under 100MB"
+      
+      # Simply truncate the log file
+      > "$log_file"
+      
+      echo "[$name] log truncated, starting fresh"
+    fi
+  fi
+}
+
 start_node() {
   local spec="$1"; IFS='|' read -r name cfg data p2p http <<<"$spec"
 
@@ -137,6 +157,10 @@ start_node() {
   fi
 
   mkdir -p "$data/logs" "$data/data"
+  
+  # Check and rotate logs if needed before starting
+  rotate_logs_if_needed "$data" "$name"
+  
   echo "[$name] starting on :$http (p2p :$p2p)..."
 
   # Load keys for this node
@@ -172,10 +196,20 @@ start_node() {
     fi
   fi
 
+  # Only use genesis file if this is a fresh start (no blockchain data)
+  local genesis_args=()
+  if [[ ! -f "$data/data/blocks/blocks.log" ]]; then
+    echo "[$name] fresh start - using IMPACT genesis file"
+    genesis_args+=(--genesis-json "$GENESIS_FILE_ACTIVE")
+  else
+    echo "[$name] continuing from existing blockchain data"
+  fi
+
   (
     exec "$NODEOS_BIN" \
       --data-dir "$data/data" \
       --config-dir "$cfg" \
+      "${genesis_args[@]}" \
       --p2p-listen-endpoint "0.0.0.0:$p2p" \
       --http-server-address "0.0.0.0:$http" \
       "${sig_args[@]}" \
@@ -230,7 +264,7 @@ print_status() {
       local blocks
       blocks=$(cleos -u "http://127.0.0.1:$http" get info 2>/dev/null | grep head_block_num | cut -d: -f2 | tr -d ' ,' || echo "0")
       local block_limit
-      block_limit=$(yq '.resources.bp_lite.block_history_limit' "$CONFIG_FILE")
+      block_limit=$(yq -r '.resources.bp_lite.block_history_limit' "$CONFIG_FILE")
       if [[ $blocks -ge $block_limit ]]; then
         echo -e "    \e[33mWARNING\e[0m: Block limit reached ($blocks/${block_limit})"
       else
@@ -563,7 +597,6 @@ state-history-endpoint = 0.0.0.0:${MINI_STATE_HISTORY_PORT}
 trace-history = true
 chain-state-history = true
 max-retained-block-files = ${MINI_API_BLOCK_HISTORY_LIMIT}
-state-history-log-retain-blocks = ${MINI_API_BLOCK_HISTORY_LIMIT}
 enable-account-queries = true
 http-validate-host = false
 access-control-allow-origin = *
@@ -757,8 +790,30 @@ case "${1:-}" in
   restart-api)
     "$0" stop-api && sleep 2 && "$0" start-api
     ;;
+  logs)
+    echo "=== Node Log Management ==="
+    for spec in "${NODES[@]}"; do
+      IFS='|' read -r name _ data _ _ <<<"$spec"
+      log_file="$data/logs/nodeos.log"
+      if [[ -f "$log_file" ]]; then
+        log_size_mb=$(stat -c%s "$log_file" 2>/dev/null || echo 0)
+        log_size_mb=$((log_size_mb / 1024 / 1024))
+        echo "[$name] Log size: ${log_size_mb}MB"
+        
+        if [[ $log_size_mb -gt 100 ]]; then
+          echo "[$name] ⚠️  Log over 100MB limit, truncating..."
+          rotate_logs_if_needed "$data" "$name"
+        else
+          echo "[$name] ✅ Log size OK"
+        fi
+      else
+        echo "[$name] No log file found"
+      fi
+      echo ""
+    done
+    ;;
   *)
-    echo "Usage: $0 {create|register|finalizer|check|start|stop|restart|status|start-bp|start-api|stop-bp|stop-api|restart-bp|restart-api|status-bp|status-api}"
+    echo "Usage: $0 {create|register|finalizer|check|start|stop|restart|status|logs|start-bp|start-api|stop-bp|stop-api|restart-bp|restart-api|status-bp|status-api}"
     echo ""
     echo "Main Commands:"
     echo "  create    - Setup configs and generate keys (EOSIO + BLS)"
@@ -771,6 +826,7 @@ case "${1:-}" in
     echo "  stop      - Stop both nodes"
     echo "  restart   - Restart both nodes"
     echo "  status    - Show status of both nodes"
+    echo "  logs      - Check/truncate log files (100MB limit)"
     echo ""
     echo "Individual Node Management:"
     echo "  start-bp    - Start only block producer"
