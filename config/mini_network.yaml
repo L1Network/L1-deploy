@@ -39,7 +39,7 @@ node:
 # Existing BP account (optional)
 existing_bp:
   account: "alpha.bp"
-  private_key: "5xxx"
+  private_key: "5Kd1p7NyrJqUmWgkuM9NLE1t5aqY5gmaQhsgve1HjDoG7RqevVB"
   public_key: "EOS5LPVXEmagu9pK3mPYrNZqbquWfd85fFkbm7HgVSekbRXWdVYbQ"
 
 # Main network connection (REQUIRED)

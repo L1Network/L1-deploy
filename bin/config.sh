@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Network endpoints
-ENDPOINT="http://127.0.0.1:8888"
+ENDPOINT=$(yq -r '.main_network.api_endpoint' "$(dirname "${BASH_SOURCE[0]}")/../config/mini_network.yaml")
 NODEOS_ONE_PORT=8888
 NODEOS_TWO_PORT=6888
 NODEOS_THREE_PORT=7888

@@ -16,6 +16,14 @@
 #   ./mini_network_control.sh restart  # stop → start
 #   ./mini_network_control.sh create   # setup configs (one-time)
 #
+# BLS Finalizer Key Update Process (for new servers):
+#   1. Generate new BLS key: spring-util bls create key --to-console > new_bls.key
+#   2. Add to config.ini: signature-provider = <PUB_BLS>=KEY:<PVT_BLS>
+#   3. Register on-chain: cleos push action eosio regfinkey '{"finalizer_name":"your.bp","finalizer_key":"<PUB_BLS>","proof_of_possession":"<SIG_BLS>"}' -p your.bp@active
+#   4. Activate key: cleos push action eosio actfinkey '{"finalizer_name":"your.bp","finalizer_key":"<PUB_BLS>"}' -p your.bp@active
+#   5. Restart node to pick up changes
+#   Note: BLS keys are machine-specific and cannot be copied between servers
+#
 # ---------------------------------------------------------------------------
 
 set -euo pipefail
@@ -659,32 +667,47 @@ EOF
     bls_private_key=$(grep "Private key:" "$bp_bls_keys_file" | cut -d: -f2 | tr -d ' ' || echo "")
   fi
 
-  # BP-Lite config (light producer with LIMITED history)
+  # BP-Lite config (minimal block producer with essential plugins only)
   cat > "${MINI_CONFIG_ROOT}/bp-lite/config.ini" << EOF
-# Light Block Producer Configuration (LIMITED HISTORY)
-chain-state-db-size-mb = ${MINI_BP_CHAIN_STATE_DB_SIZE}
-chain-state-db-guard-size-mb = $((MINI_BP_CHAIN_STATE_DB_SIZE / 8))
-reversible-blocks-db-size-mb = 340
-reversible-blocks-db-guard-size-mb = 34
-p2p-server-address = 0.0.0.0:${MINI_BP_P2P_PORT}
+# ==============================================================================
+# MINIMAL BLOCK PRODUCER CONFIG FOR ${MINI_PRODUCER_NAME} (with essential API access)
+# ==============================================================================
+
+# Core plugins for BP + essential API access
 plugin = eosio::chain_plugin
 plugin = eosio::chain_api_plugin
-plugin = eosio::http_plugin
 plugin = eosio::producer_plugin
-plugin = eosio::producer_api_plugin
 plugin = eosio::net_plugin
-plugin = eosio::net_api_plugin
-eos-vm-oc-enable = true
-chain-threads = ${MINI_CHAIN_THREADS}
-http-threads = ${MINI_HTTP_THREADS}
-net-threads = ${MINI_NET_THREADS}
-enable-stale-production = true
+plugin = eosio::http_plugin
+plugin = eosio::db_size_api_plugin
+
+# Producer configuration
 producer-name = ${MINI_PRODUCER_NAME}
-max-retained-block-files = ${MINI_BP_BLOCK_HISTORY_LIMIT}
+enable-stale-production = false
+
+# HTTP for essential API access
+http-server-address = 0.0.0.0:${MINI_BP_HTTP_PORT}
 http-validate-host = false
 access-control-allow-origin = *
 verbose-http-errors = true
-allowed-connection = ${MINI_ALLOWED_CONNECTIONS}
+
+# Network configuration
+p2p-listen-endpoint = 0.0.0.0:${MINI_BP_P2P_PORT}
+
+# Performance settings for BP
+vote-threads = 4
+chain-threads = ${MINI_CHAIN_THREADS}
+net-threads = ${MINI_NET_THREADS}
+http-threads = ${MINI_HTTP_THREADS}
+eos-vm-oc-enable = true
+
+# Essential limits
+chain-state-db-size-mb = ${MINI_BP_CHAIN_STATE_DB_SIZE}
+chain-state-db-guard-size-mb = $((MINI_BP_CHAIN_STATE_DB_SIZE / 8))
+max-retained-block-files = ${MINI_BP_BLOCK_HISTORY_LIMIT}
+
+# Connection settings
+allowed-connection = any
 p2p-max-nodes-per-host = ${MINI_MAX_NODES_PER_HOST}
 EOF
 
