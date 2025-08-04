@@ -1,0 +1,102 @@
+---
+# Mini Network Configuration
+# Connects to existing blockchain network
+
+# Network endpoints
+network:
+  # Mini network node ports
+  bp_lite:
+    http_port: 9888
+    p2p_port: 9444
+  
+  api_node:
+    http_port: 9889
+    p2p_port: 9445
+    state_history_port: 8080
+
+# Directory paths
+paths:
+  root: "/data/chain-data/mini"
+  config_root: "../configs/mini"
+
+# Snapshot configuration
+snapshots:
+  # Local directory to store downloaded snapshots
+  download_dir: "/data/snapshots"
+  # Keep downloaded snapshots after use (true/false)
+  keep_downloaded: true
+  # Default snapshot URLs for quick sync
+  sources:
+    impact_mainnet: "https://snapshots.impact.detroitledger.tech/latest.bin"
+    # Add more snapshot sources as needed
+    # backup_source: "https://backup.example.com/snapshot.bin"
+
+# Node configuration
+node:
+  bp_name: "alpha.bp"
+  producer_name: "alpha.bp"
+
+# Existing BP account (optional)
+existing_bp:
+  account: "alpha.bp"
+  private_key: "5Kd1p7NyrJqUmWgkuM9NLE1t5aqY5gmaQhsgve1HjDoG7RqevVB"
+  public_key: "EOS5LPVXEmagu9pK3mPYrNZqbquWfd85fFkbm7HgVSekbRXWdVYbQ"
+
+# Main network connection (REQUIRED)
+main_network:
+  api_endpoint: "https://layer1.eosusa.io"
+  # REQUIRED: Full P2P addresses of main network nodes to connect to
+  p2p_peers:
+    - "layer1.p2p.eosusa.io:9887"
+    - "peer1-layer1.eosphere.io:9877"
+    - "p2p.impact.detroitledger.tech:1337"
+  mandatory_connection: true
+
+# Producer registration settings
+producer:
+  url: "https://bp.boid.com"
+  location_code: "EU"
+  stake:
+    net: "100.0000 IMPACT"
+    cpu: "100.0000 IMPACT"
+  buy_ram: "1000.0000 IMPACT"
+  initial_funding: "5000.0000 IMPACT"
+  self_stake:
+    net: "2000.0000 IMPACT"
+    cpu: "2000.0000 IMPACT"
+
+# Additional P2P peers (beyond main network)
+additional_p2p_peers: []
+  # Example:
+  # - "peer1.example.com:9876"
+  # - "peer2.example.com:9876"
+
+# Resource limits (per node type)
+resources:
+  bp_lite:
+    # MB for bp-lite
+    chain_state_db_size: 4096
+    # Limited block history for BP node
+    block_history_limit: 100000
+  
+  api_node:
+    # MB for api-node (larger for full history)
+    chain_state_db_size: 4096
+    # Unlimited block history for API node
+    block_history_limit: 0
+
+# Performance settings
+performance:
+  chain_threads: 2
+  http_threads: 4
+  net_threads: 2
+
+# Security settings
+security:
+  allowed_connections: "any"
+  max_nodes_per_host: 10
+
+# Logging
+logging:
+  # debug, info, warn, error
+  level: "info" 

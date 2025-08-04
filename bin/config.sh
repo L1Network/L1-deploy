@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Network endpoints
-ENDPOINT="http://127.0.0.1:8888"
+ENDPOINT="127.0.0.1:8888"
 NODEOS_ONE_PORT=8888
 NODEOS_TWO_PORT=6888
 NODEOS_THREE_PORT=7888
@@ -19,6 +19,7 @@ NODE_THREE_DIR="node-gamma"
 
 # Config files
 GENESIS_FILE="/data/L1-deploy/config/genesis.json"
+GENESIS_FILE_ACTIVE="/data/L1-deploy/config/genesis-IMPACT.json"
 CONFIG_FILE="/data/L1-deploy/config/config.ini"
 LOGGING_JSON="/data/L1-deploy/config/logging.json"
 

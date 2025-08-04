@@ -200,7 +200,7 @@ start_func() {
 echo "STARTING COMMAND ${COMMAND}"
 
 if [ "$COMMAND" == "NA" ]; then
-  echo "usage: network_control.sh [CREATE|START|CLEAN|STOP|SAVANNA]"
+  echo "usage: network_control.sh [CREATE|START|CLEAN|STOP]"
   exit 1
 fi
 
